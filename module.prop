@@ -1,6 +1,7 @@
 id=anti_fraud_ads
 name=AF_ADS_FUCK
-version=260607
-versionCode=20260607
-author=Bailai7513(原作者：10007)
-description=屏蔽ColorOS反诈+拦截反诈IP(213条)+冻结官方应用监控+冻结OPPO广告+hosts去广告(17000+条)+chattr锁定广告缓存+SQLite空壳防广告SDK写入。保留广告奖励。
+version=260627
+versionCode=20260627
+author=BaiLai7513(原作者：10007)
+description=屏蔽ColorOS反诈+拦截反诈IP(213条)+冻结官方应用监控+冻结OPPO广告+hosts去广告(17000+条)+秋风广告规则每日自动更新+chattr锁定广告缓存+SQLite空壳防广告SDK写入+保留广告奖励。
+updateUrl=https://raw.githubusercontent.com/BaiLai7513/anti-fraud-ads/main/update.json
