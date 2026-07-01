@@ -24,6 +24,17 @@ Magisk / KernelSU / APatch 刷入，重启即可。
 | `check_update.sh` | 模块更新检测脚本 |
 | `check_privacy.sh` | 实际效果检测脚本 |
 
+## 效果检测
+
+刷入重启后验证模块是否生效：
+
+**方式一（推荐）：** 用 MT 管理器 / NP 管理器进入 `/data/adb/modules/anti_fraud_ads/`，直接点击 `check_privacy.sh` 执行。
+
+**方式二：** 终端执行：
+```bash
+su -c "sh /data/adb/modules/anti_fraud_ads/check_privacy.sh"
+```
+
 ## 卸载
 
 Magisk 中移除模块。
