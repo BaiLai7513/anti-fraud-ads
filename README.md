@@ -18,9 +18,9 @@
 
 Magisk / KernelSU / APatch 刷入 zip，重启生效
 
-#测试结果参考目录
+## 实际测试结果日志文件
 
-#反馈
+## 反馈
 反馈请提issues
 
 ## 致谢
