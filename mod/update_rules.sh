@@ -52,17 +52,23 @@ if $fetch_ok; then
     cp "$TMP_HOSTS" "$HOSTS_FILE" 2>>$LOG
     rm -f /data/local/tmp/awa_new.txt
 
-    # 多策略挂载 hosts（同 service.sh）
-    mount -o bind "$HOSTS_FILE" /system/etc/hosts 2>>$LOG
-    sleep 1
-    active_lines=$(wc -l < /system/etc/hosts 2>/dev/null)
-    if [ "$active_lines" -lt 100 ]; then
-        # 策略2: /data/local/tmp bind mount
-        cp "$HOSTS_FILE" /data/local/tmp/hosts_block 2>/dev/null
-        mount -o bind /data/local/tmp/hosts_block /system/etc/hosts 2>>$LOG
-        active_lines=$(wc -l < /system/etc/hosts 2>/dev/null)
+    # 干净版挂载 hosts（同 service.sh：md5 幂等 + 直接 bind 模块文件，无残留）
+    src_md5=$(md5sum "$HOSTS_FILE" 2>/dev/null | awk '{print $1}')
+    sys_md5=$(md5sum /system/etc/hosts 2>/dev/null | awk '{print $1}')
+    if [ -n "$src_md5" ] && [ "$src_md5" = "$sys_md5" ]; then
+        echo "[$(date)] update_rules: hosts already active (md5 match)" >> $LOG
+    else
+        if mount -o bind "$HOSTS_FILE" /system/etc/hosts 2>>$LOG; then
+            sys_md5=$(md5sum /system/etc/hosts 2>/dev/null | awk '{print $1}')
+            if [ "$src_md5" = "$sys_md5" ]; then
+                echo "[$(date)] update_rules: re-mounted hosts OK (md5=$src_md5)" >> $LOG
+            else
+                echo "[$(date)] update_rules: bind mounted but md5 mismatch" >> $LOG
+            fi
+        else
+            echo "[$(date)] update_rules: bind mount FAILED" >> $LOG
+        fi
     fi
-    echo "[$(date)] update_rules: re-mounted hosts ($active_lines lines active)" >> $LOG
     date +%s > "$STAMP"
 else
     echo "[$(date)] update_rules: fetch FAILED" >> $LOG
