@@ -1,25 +1,52 @@
 #!/system/bin/sh
-# 秋风广告规则 — 开机后检测一次，超过7天才更新 (v2 fixed)
+# 双源云端订阅 — hosts 自动更新 (v3.1 多源fallback)
+# 源1: lingeringsound/10007/reward        (hosts 格式, 直用)
+# 源2: AWAvenue-Ads-Rule 秋风广告规则     (Adblock 格式, 转换后合并)
+# 策略: 开机检测, 默认7天拉一次; hosts 为占位态(<1000行)时立即拉取
+# 容错: 每个源带 3 条镜像链(raw -> boki.moe -> jsdelivr)，直连失败自动切换
 MODDIR=${0%/*}
 MODDIR="${MODDIR%/*}"
 LOG="$MODDIR/module.log"
-UPDATE_URL="https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/AWAvenue-Ads-Rule.txt"
-FALLBACK_URL="https://github.boki.moe/https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/AWAvenue-Ads-Rule.txt"
+
+# 源1: reward 三镜像
+REWARD_URL="https://raw.githubusercontent.com/lingeringsound/10007/main/reward"
+REWARD_FB1="https://github.boki.moe/https://raw.githubusercontent.com/lingeringsound/10007/main/reward"
+REWARD_FB2="https://cdn.jsdelivr.net/gh/lingeringsound/10007@main/reward"
+# 源2: AWAvenue 三镜像
+AWA_URL="https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/AWAvenue-Ads-Rule.txt"
+AWA_FB1="https://github.boki.moe/https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/AWAvenue-Ads-Rule.txt"
+AWA_FB2="https://cdn.jsdelivr.net/gh/TG-Twilight/AWAvenue-Ads-Rule@main/AWAvenue-Ads-Rule.txt"
+
 HOSTS_FILE="$MODDIR/system/etc/hosts"
-TMP_HOSTS="/data/local/tmp/awa_hosts_merged.txt"
-STAMP="$MODDIR/.awa_last_update"
+TMP_MERGED="/data/local/tmp/hosts_merged.txt"
+STAMP="$MODDIR/.hosts_update_stamp"
+STAMP_DAYS=7
 
-echo "[$(date)] update_rules: boot check, 7-day interval" >> $LOG
+# 多源拉取: 依次尝试, 成功即返回
+fetch_one() {
+    local out="$1"; shift
+    for u in "$@"; do
+        if curl -sL --connect-timeout 15 --max-time 40 -o "$out" "$u" 2>>$LOG; then
+            echo "[$(date)] update_rules: fetched OK from $u" >> $LOG
+            return 0
+        fi
+    done
+    return 1
+}
 
-if [ -f "$STAMP" ]; then
+echo "[$(date)] update_rules: cloud subscribe check" >> $LOG
+
+# 当前 hosts 行数
+CUR_N=$(wc -l < "$HOSTS_FILE" 2>/dev/null || echo 0)
+
+# 7天间隔检查（仅当 hosts 已是完整规则时跳过）
+if [ "$CUR_N" -ge 1000 ] && [ -f "$STAMP" ]; then
     last=$(cat "$STAMP" 2>/dev/null)
     now=$(date +%s)
     diff=$((now - last))
-    if [ -n "$last" ] && [ "$diff" -ge 0 ] && [ "$diff" -lt 604800 ]; then
-        remain=$((604800 - diff))
-        days=$((remain / 86400))
-        hours=$(((remain % 86400) / 3600))
-        echo "[$(date)] update_rules: skip, next in ~${days}d${hours}h" >> $LOG
+    if [ -n "$last" ] && [ "$diff" -ge 0 ] && [ "$diff" -lt $((STAMP_DAYS * 86400)) ]; then
+        remain=$(((STAMP_DAYS * 86400) - diff))
+        echo "[$(date)] update_rules: skip, next in ~$((remain / 86400))d (hosts=${CUR_N}行)" >> $LOG
         exit 0
     fi
 fi
@@ -30,33 +57,46 @@ for i in $(seq 1 6); do
     sleep 10
 done
 
-echo "[$(date)] update_rules: fetching AWAvenue-Ads-Rule" >> $LOG
-
+echo "[$(date)] update_rules: fetching cloud rules (reward + AWAvenue)" >> $LOG
 fetch_ok=false
-for src in "$UPDATE_URL" "$FALLBACK_URL"; do
-    echo "[$(date)] update_rules: trying $src" >> $LOG
-    if curl -sL --connect-timeout 15 --max-time 30 -o /data/local/tmp/awa_new.txt "$src" 2>>$LOG; then
-        new_lines=$(wc -l < /data/local/tmp/awa_new.txt)
-        if [ "$new_lines" -gt 100 ]; then
-            fetch_ok=true
-            break
-        fi
-    fi
-done
+
+# 源1: reward (hosts 格式)
+if fetch_one /data/local/tmp/reward_raw.txt "$REWARD_URL" "$REWARD_FB1" "$REWARD_FB2"; then
+    n=$(grep -vcE '^#|^[[:space:]]*$' /data/local/tmp/reward_raw.txt)
+    echo "[$(date)] update_rules: reward fetched ($n 有效行)" >> $LOG
+    [ "$n" -gt 100 ] && fetch_ok=true
+fi
+
+# 源2: AWAvenue (Adblock -> hosts)
+if fetch_one /data/local/tmp/awa_raw.txt "$AWA_URL" "$AWA_FB1" "$AWA_FB2"; then
+    sed -n 's/^||\([^/^*]*\)\^$/0.0.0.0 \1/p' /data/local/tmp/awa_raw.txt \
+        | grep -vE '^[[:space:]]*$' > /data/local/tmp/awa_hosts.txt
+    n=$(wc -l < /data/local/tmp/awa_hosts.txt)
+    echo "[$(date)] update_rules: AWAvenue fetched (转换 $n 条)" >> $LOG
+    [ "$n" -gt 50 ] && fetch_ok=true
+fi
 
 if $fetch_ok; then
-    # 合并去重
-    cat "$HOSTS_FILE" /data/local/tmp/awa_new.txt | sort -u > "$TMP_HOSTS"
-    merged_lines=$(wc -l < "$TMP_HOSTS")
-    echo "[$(date)] update_rules: merged $merged_lines lines" >> $LOG
-    cp "$TMP_HOSTS" "$HOSTS_FILE" 2>>$LOG
-    rm -f /data/local/tmp/awa_new.txt
+    # 合并去重: 基础占位 + reward(保留注释) + AWAvenue(已转换)
+    # 过滤小米相关条目(OPPO用户不需要)
+    {
+        echo "127.0.0.1 localhost"
+        echo "::1 localhost"
+        echo "::1 ip6-loopback"
+        echo "::1 ip6-localhost"
+        cat /data/local/tmp/reward_raw.txt 2>/dev/null
+        cat /data/local/tmp/awa_hosts.txt 2>/dev/null
+    } | grep -vE '^[[:space:]]*$' | grep -viE 'miui\.com|xiaomi' | sort -u > "$TMP_MERGED"
+    merged=$(wc -l < "$TMP_MERGED")
+    echo "[$(date)] update_rules: merged $merged 行" >> $LOG
+    cp "$TMP_MERGED" "$HOSTS_FILE" 2>>$LOG
+    rm -f /data/local/tmp/reward_raw.txt /data/local/tmp/awa_raw.txt /data/local/tmp/awa_hosts.txt
 
-    # 干净版挂载 hosts（同 service.sh：md5 幂等 + 直接 bind 模块文件，无残留）
+    # 干净版挂载 hosts（md5 幂等 + 直接 bind 模块文件, 无残留）
     src_md5=$(md5sum "$HOSTS_FILE" 2>/dev/null | awk '{print $1}')
     sys_md5=$(md5sum /system/etc/hosts 2>/dev/null | awk '{print $1}')
     if [ -n "$src_md5" ] && [ "$src_md5" = "$sys_md5" ]; then
-        echo "[$(date)] update_rules: hosts already active (md5 match)" >> $LOG
+        echo "[$(date)] update_rules: hosts already active (md5 match, ${merged}行)" >> $LOG
     else
         if mount -o bind "$HOSTS_FILE" /system/etc/hosts 2>>$LOG; then
             sys_md5=$(md5sum /system/etc/hosts 2>/dev/null | awk '{print $1}')
@@ -71,5 +111,5 @@ if $fetch_ok; then
     fi
     date +%s > "$STAMP"
 else
-    echo "[$(date)] update_rules: fetch FAILED" >> $LOG
+    echo "[$(date)] update_rules: fetch FAILED, keep existing hosts (${CUR_N}行)" >> $LOG
 fi
