@@ -37,7 +37,13 @@ if [ -f "$SRC" ]; then
   SYS_N=$(wc -l < "$SYS" 2>/dev/null)
   echo "[hosts] 模块=${SRC_N}行 md5=${SRC_MD5}"
   echo "[hosts] 系统=${SYS_N}行 md5=${SYS_MD5}"
-  if [ "$SRC_MD5" = "$SYS_MD5" ]; then echo "[PASS] hosts 已生效(内容一致)"
+  if [ "$SRC_MD5" = "$SYS_MD5" ]; then
+    echo "[PASS] hosts 已生效(内容一致)"
+    if [ "$SRC_N" -lt 1000 ] 2>/dev/null; then
+      echo "[WARN] hosts 为占位态(${SRC_N}行)，云端规则未拉取(检查网络/update_rules.log)"
+    else
+      echo "[OK]   hosts 云端规则已更新(${SRC_N}行)"
+    fi
   else echo "[FAIL] hosts 未生效(源${SRC_N}行 vs 系统${SYS_N}行)"
   fi
 else echo "[FAIL] 模块 hosts 源文件缺失"
