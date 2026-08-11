@@ -33,7 +33,7 @@
   ```sh
   sh /data/adb/modules/anti_fraud_ads/mod/update_rules.sh
   ```
-  立即生效（无需重启）
+  hosts更新立即生效（无需重启）
 - 规则格式支持：
   - **hosts 格式** `0.0.0.0 域名` → 直接可用
   - **Adblock 格式** `||域名^` → 保留脚本内置的 sed 转换逻辑
