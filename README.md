@@ -53,7 +53,7 @@ bug反馈等请提供/data/adb/modules/anti_fraud_ads/self_check.log提交issues
 
 ## 致谢
 
-- [lingeringsound/10007](https://github.com/lingeringsound/10007) — hosts 订阅规则源
+- [lingeringsound/10007](https://github.com/lingeringsound/10007) — 10007的hosts订阅规则源
 - [TG-Twilight/AWAvenue-Ads-Rule](https://github.com/TG-Twilight/AWAvenue-Ads-Rule) — 秋风广告规则
 
 ## 注意事项
