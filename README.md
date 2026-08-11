@@ -18,7 +18,7 @@
 
 Magisk / KernelSU / APatch 刷入 zip，重启生效
 
-## 实际测试结果日志文件
+## 实际测试效果
 
 ## 反馈
 反馈请提issues
@@ -26,3 +26,6 @@ Magisk / KernelSU / APatch 刷入 zip，重启生效
 ## 致谢
 
 - [TG-Twilight/AWAvenue-Ads-Rule](https://github.com/TG-Twilight/AWAvenue-Ads-Rule) 秋风广告规则
+
+##注意事项
+- 模块建议从github下载使用，三方获取存在风险，仅用用保护个人隐私，切勿用于非法用途。
