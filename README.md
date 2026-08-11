@@ -16,13 +16,12 @@
 
 ## 安装
 
-Magisk / KernelSU / APatch 刷入 zip，重启生效。
+Magisk / KernelSU / APatch 刷入 zip，重启生效
 
-## 检测
+#测试结果参考目录
 
-```sh
-su -c "sh /data/adb/modules/anti_fraud_ads/check_privacy.sh"
-```
+#反馈
+反馈请提issues
 
 ## 致谢
 
