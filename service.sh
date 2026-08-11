@@ -154,3 +154,9 @@ if [ "$final_count" -ge 100 ]; then
 else
     echo "[$(date)] service.sh: WARNING, final DROP=$final_count" >> $LOG
 fi
+
+# ===== 阶段7: 开机自检（延迟5分钟后台执行，不影响主流程）=====
+# 开机 5 分钟后自动运行 self_check.sh，检测 hosts/iptables/ads_lock 实际生效情况，
+# 结果写入 self_check.log；即使检测失败也完整记录，便于反馈 bug 与适配性。
+nohup /system/bin/sh -c "sleep 300; exec /system/bin/sh $MODDIR/mod/self_check.sh $MODDIR" >/dev/null 2>&1 &
+echo "[$(date)] Phase7: self_check scheduled (+5min)" >> $LOG
