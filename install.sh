@@ -13,6 +13,15 @@ print_modname() {
 on_install() {
   ui_print "- Extracting module files..."
   unzip -o "$ZIPFILE" -d $MODPATH >&2
+
+  # APM (APatch) 兼容：框架在 on_install 后会尝试 cp /dev/tmp/service.sh
+  # （Magisk 安装器才有的路径，APM 环境不存在导致无意义报错）。
+  # 这里主动补一份，让框架的 cp 能找到源，跳过报错。
+  if [ ! -f /dev/tmp/service.sh ]; then
+    mkdir -p /dev/tmp 2>/dev/null
+    cp "$MODPATH/service.sh" /dev/tmp/service.sh 2>/dev/null && \
+      ui_print "- APM compat: /dev/tmp/service.sh created"
+  fi
   ui_print "- Done"
 }
 
