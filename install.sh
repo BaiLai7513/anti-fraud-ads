@@ -5,7 +5,7 @@ PROPFILE=false
 
 print_modname() {
   ui_print "*******************************"
-  ui_print "     AF_ADS_FUCK v260718       "
+  ui_print "     AF_ADS_FUCK v260812       "
   ui_print "  anti-fraud + adblock + lock  "
   ui_print "*******************************"
 }
