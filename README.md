@@ -19,7 +19,7 @@
 Magisk / KernelSU / APatch 刷入 zip，重启生效
 
 ## 实际测试效果
-- 开机3~5再测试，完全生效需要时间
+- 手动开机3~5min后再测试，完全生效需要时间
 - 测试脚本路径:/data/adb/modules/anti_fraud_ads/mod/self_check.sh
 - 测试日志路径:/data/adb/modules/anti_fraud_ads/self_check.log
 
