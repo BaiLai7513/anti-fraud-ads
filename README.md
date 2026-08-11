@@ -32,4 +32,4 @@ bug反馈等请提供/data/adb/modules/anti_fraud_ads/self_check.log提交issues
 - [TG-Twilight/AWAvenue-Ads-Rule](https://github.com/TG-Twilight/AWAvenue-Ads-Rule) 秋风广告规则
 
 ## 注意事项
-- 模块建议从github下载使用，三方获取存在风险，仅用用保护个人隐私，切勿用于非法用途。
+- 模块建议从github下载使用，三方获取存在风险，仅用于保护个人隐私，切勿用于非法用途。
