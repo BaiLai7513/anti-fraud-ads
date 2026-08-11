@@ -29,30 +29,28 @@ for i in $(seq 1 20); do
 done
 echo "[$(date)] Phase1: iptables ready (attempt $i)" >> $LOG
 
-# ===== 阶段1.5: hosts 去广告（多策略） =====
+# ===== 阶段1.5: hosts 去广告（APatch 环境手动 bind mount，无残留） =====
+# 说明：本机为 APatch 环境，无 Magisk magic mount 自动挂载。
+#       直接 bind mount 模块 hosts 到 /system/etc/hosts。
+#       【干净版要点】不复制到 /local/tmp，直接 bind 模块源文件本身，
+#       避免产生 //deleted 残留痕迹与 WARN；用 md5 比对做幂等判断，
+#       已生效则不重复挂载。
 HOSTS_SRC="$MODDIR/system/etc/hosts"
 if [ -f "$HOSTS_SRC" ]; then
-    sys_lines=$(wc -l < /system/etc/hosts 2>/dev/null)
-    if [ "$sys_lines" -gt 100 ]; then
-        echo "[$(date)] hosts: overlay already active ($sys_lines lines)" >> $LOG
+    src_md5=$(md5sum "$HOSTS_SRC" 2>/dev/null | awk '{print $1}')
+    sys_md5=$(md5sum /system/etc/hosts 2>/dev/null | awk '{print $1}')
+    if [ -n "$src_md5" ] && [ "$src_md5" = "$sys_md5" ]; then
+        echo "[$(date)] hosts: already active (md5 match)" >> $LOG
     else
-        # 策略1: 直接 bind mount
-        mount -o bind "$HOSTS_SRC" /system/etc/hosts 2>>$LOG
-        sleep 1
-        new_lines=$(wc -l < /system/etc/hosts 2>/dev/null)
-        if [ "$new_lines" -gt 100 ]; then
-            echo "[$(date)] hosts: bind mount OK ($new_lines lines)" >> $LOG
-        else
-            # 策略2: 复制到 /data/local/tmp 再 bind mount（绕过 overlayfs）
-            cp "$HOSTS_SRC" /data/local/tmp/hosts_block 2>/dev/null
-            mount -o bind /data/local/tmp/hosts_block /system/etc/hosts 2>>$LOG
-            sleep 1
-            new_lines=$(wc -l < /system/etc/hosts 2>/dev/null)
-            if [ "$new_lines" -gt 100 ]; then
-                echo "[$(date)] hosts: tmp bind mount OK ($new_lines lines)" >> $LOG
+        if mount --bind "$HOSTS_SRC" /system/etc/hosts 2>>$LOG; then
+            sys_md5=$(md5sum /system/etc/hosts 2>/dev/null | awk '{print $1}')
+            if [ "$src_md5" = "$sys_md5" ]; then
+                echo "[$(date)] hosts: bind mount OK (md5=$src_md5)" >> $LOG
             else
-                echo "[$(date)] hosts: ALL STRATEGIES FAILED (current=$new_lines)" >> $LOG
+                echo "[$(date)] hosts: bind mounted but md5 mismatch (src=$src_md5 sys=$sys_md5)" >> $LOG
             fi
+        else
+            echo "[$(date)] hosts: bind mount FAILED" >> $LOG
         fi
     fi
 else
