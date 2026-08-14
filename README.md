@@ -1,3 +1,5 @@
+
+
 # anti-fraud-ads (AF_ADS_FUCK)
 
 屏蔽 ColorOS 反诈 + 去广告 + 隐私防护 Magisk/KSU/APatch 模块
@@ -58,3 +60,4 @@ bug反馈等请提供/data/adb/modules/anti_fraud_ads/self_check.log提交issues
 
 ## 注意事项
 - 模块建议从github下载使用，三方获取存在风险，仅用于保护个人隐私，切勿用于非法用途。
+- 模块卸载会自动清除规则并恢复冻结应用，但 `chattr +i` 锁定的文件/目录需手动执行 `chattr -i` 恢复，或重启后等待对应应用重新创建。
