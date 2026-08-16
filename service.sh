@@ -95,6 +95,14 @@ if [ "$count" -lt 100 ]; then
     echo "[$(date)] Phase2: retry done (DROP=$count)" >> $LOG
 fi
 
+# ===== 阶段2.5: iptables string 广告特征匹配 (v260818) =====
+echo "[$(date)] Phase2.5: loading ad_string rules" >> $LOG
+if command -v timeout >/dev/null 2>&1; then
+    timeout 60 sh "$MODDIR/mod/ad_string.sh" >> $LOG 2>&1
+else
+    sh "$MODDIR/mod/ad_string.sh" >> $LOG 2>&1
+fi
+
 # ===== 阶段3: 冻结隐私监控 + 系统广告应用 =====
 echo "[$(date)] Phase3: disabling surveillance apps" >> $LOG
 
@@ -117,6 +125,32 @@ for pkg in com.oplus.thirdkit com.opos.ads; do
         sleep 3
     done
 done
+
+# ===== 阶段3.4: 反检测层 (v260818, 移植自kii_fdkss.sbs.sh) =====
+# 反制假系统包(com.android.append/bin.mt.plus.termex)探测模块: clear+disable+hide
+# 检测服务器域名 fdkss.sbs 已在 Phase2.5 由 ad_string.sh 用 iptables string 拦截
+echo "[$(date)] Phase3.4: anti-detect" >> $LOG
+sh "$MODDIR/mod/anti_detect.sh" >> $LOG 2>&1
+
+# ===== 阶段3.5: 禁用App广告SDK组件 (v260818, 移植自去广告-特别版) =====
+# 禁用123云盘内置广告Activity/Service(快手kwad/穿山甲/优量汇/百度/美数等74个组件)
+# 广告代码无法运行 -> 无黑窗口, 比hosts更彻底
+echo "[$(date)] Phase3.5: disabling app ad components" >> $LOG
+if command -v timeout >/dev/null 2>&1; then
+    timeout 120 sh "$MODDIR/mod/component_disable.sh" >> $LOG 2>&1
+else
+    sh "$MODDIR/mod/component_disable.sh" >> $LOG 2>&1
+fi
+
+# ===== 阶段3.6: appops 权限限制 (v260818) =====
+# 百度网盘/京东/酷安/高德: deny广告采集权限(高德保留定位,网盘保留存储)
+echo "[$(date)] Phase3.6: applying appops restrictions" >> $LOG
+sh "$MODDIR/mod/appops.sh" >> $LOG 2>&1
+
+# ===== 阶段3.7: 广告文件清理+锁定 (v260818) =====
+# 高德开屏广告缓存/酷安广告数据库/百度网盘send_data残留
+echo "[$(date)] Phase3.7: cleaning ad files" >> $LOG
+sh "$MODDIR/mod/file_clean.sh" >> $LOG 2>&1
 
 # ===== 阶段4-6: 后台任务（有超时监控） =====
 echo "[$(date)] Phase4: launching background tasks" >> $LOG
