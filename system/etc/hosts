@@ -1,5 +1,5 @@
 # anti_fraud_ads 占位 hosts（云端订阅前的基础兜底）
-# 云端规则由 mod/update_rules.sh 开机自动拉取合并（lingeringsound/10007/reward + AWAvenue 秋风规则）
+# 云端规则由 mod/update_rules.sh 开机自动拉取合并（lingeringsound/10007/all 完整版 + AWAvenue 秋风 + CN精准补丁，IPv6双写防绕过）
 127.0.0.1 localhost
 ::1 localhost
 ::1 ip6-loopback
