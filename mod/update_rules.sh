@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # 双源云端订阅 — hosts 自动更新 (v3.1 多源fallback)
-# 源1: lingeringsound/10007/reward        (hosts 格式, 直用)
+# 源1: lingeringsound/10007/all 完整版        (hosts 格式, 直用)
 # 源2: AWAvenue-Ads-Rule 秋风广告规则     (Adblock 格式, 转换后合并)
 # 策略: 开机检测, 默认7天拉一次; hosts 为占位态(<1000行)时立即拉取
 # 容错: 每个源带 3 条镜像链(raw -> boki.moe -> jsdelivr)，直连失败自动切换
@@ -8,10 +8,10 @@ MODDIR=${0%/*}
 MODDIR="${MODDIR%/*}"
 LOG="$MODDIR/module.log"
 
-# 源1: reward 三镜像
-REWARD_URL="https://raw.githubusercontent.com/lingeringsound/10007/main/reward"
-REWARD_FB1="https://github.boki.moe/https://raw.githubusercontent.com/lingeringsound/10007/main/reward"
-REWARD_FB2="https://cdn.jsdelivr.net/gh/lingeringsound/10007@main/reward"
+# 源1: 10007完整版 all 三镜像 (v1.3: reward→all 完整版)
+ALL_URL="https://raw.githubusercontent.com/lingeringsound/10007/main/all"
+ALL_FB1="https://github.boki.moe/https://raw.githubusercontent.com/lingeringsound/10007/main/all"
+ALL_FB2="https://cdn.jsdelivr.net/gh/lingeringsound/10007@main/all"
 # 源2: AWAvenue 三镜像
 AWA_URL="https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/AWAvenue-Ads-Rule.txt"
 AWA_FB1="https://github.boki.moe/https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/AWAvenue-Ads-Rule.txt"
@@ -57,13 +57,13 @@ for i in $(seq 1 6); do
     sleep 10
 done
 
-echo "[$(date)] update_rules: fetching cloud rules (reward + AWAvenue)" >> $LOG
+echo "[$(date)] update_rules: fetching cloud rules (all + AWAvenue)" >> $LOG
 fetch_ok=false
 
-# 源1: reward (hosts 格式)
-if fetch_one /data/local/tmp/reward_raw.txt "$REWARD_URL" "$REWARD_FB1" "$REWARD_FB2"; then
+# 源1: all 完整版 (hosts 格式)
+if fetch_one /data/local/tmp/reward_raw.txt "$ALL_URL" "$ALL_FB1" "$ALL_FB2"; then
     n=$(grep -vcE '^#|^[[:space:]]*$' /data/local/tmp/reward_raw.txt)
-    echo "[$(date)] update_rules: reward fetched ($n 有效行)" >> $LOG
+    echo "[$(date)] update_rules: all fetched ($n 有效行)" >> $LOG
     [ "$n" -gt 100 ] && fetch_ok=true
 fi
 
@@ -77,8 +77,9 @@ if fetch_one /data/local/tmp/awa_raw.txt "$AWA_URL" "$AWA_FB1" "$AWA_FB2"; then
 fi
 
 if $fetch_ok; then
-    # 合并去重: 基础占位 + reward(保留注释) + AWAvenue(已转换)
+    # 合并去重: 基础占位 + all(保留注释) + AWAvenue(已转换) + CN补丁
     # 过滤小米相关条目(OPPO用户不需要)
+    # IPv6双写: 所有 0.0.0.0 条目同时输出 :: (防IPv6绕过, v1.2)
     {
         echo "127.0.0.1 localhost"
         echo "::1 localhost"
@@ -86,7 +87,10 @@ if $fetch_ok; then
         echo "::1 ip6-localhost"
         cat /data/local/tmp/reward_raw.txt 2>/dev/null
         cat /data/local/tmp/awa_hosts.txt 2>/dev/null
-    } | grep -vE '^[[:space:]]*$' | grep -viE 'miui\.com|xiaomi' | sort -u > "$TMP_MERGED"
+        cat "$MODDIR/mod/cn_ad_patch.txt" 2>/dev/null
+    } | grep -vE '^[[:space:]]*$' | grep -viE 'miui|xiaomi|(^|\.)mi\.com$|huawei|vivo\.com|samsung|hihonor|flyme|meizu|lenovo' \
+      | awk '{ if ($1=="0.0.0.0" && $2!="") { print; print ":: " $2 } else print }' \
+      | sort -u > "$TMP_MERGED"
     merged=$(wc -l < "$TMP_MERGED")
     echo "[$(date)] update_rules: merged $merged 行" >> $LOG
     cp "$TMP_MERGED" "$HOSTS_FILE" 2>>$LOG
