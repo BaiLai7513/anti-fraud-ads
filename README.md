@@ -1,17 +1,6 @@
-# anti-fraud-ads (AF_ADS_FUCK)
+# 项目介绍
 
 屏蔽 ColorOS 反诈 + 去广告 + 隐私防护 Magisk/KSU/APatch 模块
-
-## 功能
-
-| 功能 | 说明 |
-|------|------|
-| hosts 云端订阅 | 自动拉取双源合并去重（lingeringsound/10007 reward + AWAvenue 秋风广告规则），7 天自动更新，多镜像容错（GitHub raw → boki.moe → jsdelivr） |
-| iptables 反诈 IP 拦截 | 213 条 DROP 规则，封锁反诈中心 IP |
-| 系统应用冻结 | pm disable com.oplus.thirdkit + com.opos.ads |
-| 广告 SDK 缓存锁定 | chattr +i 锁定 pangle/beizi/gdt/ksad 等 187 个 SDK 目录 |
-| SQLite 空壳注入 | 替换广告 SDK 数据库为空壳，阻止写入 |
-| ColorOS 劫持 | phonemanager + appdetail → :8848 黑洞 |
 
 ## hosts 云端订阅（完全订阅化）
 
