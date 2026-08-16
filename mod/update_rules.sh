@@ -92,6 +92,18 @@ if $fetch_ok; then
       | awk '{ if ($1=="0.0.0.0" && $2!="") { print; print ":: " $2 } else print }' \
       | sort -u > "$TMP_MERGED"
     merged=$(wc -l < "$TMP_MERGED")
+
+    # 国内环境优化: 注释国外大厂广告域名 (v260818, 静态列表安全不误伤)
+    # 列表: mod/abroad_domains.txt (google/amazon-adsystem/apple/microsoft/yahoo等246个)
+    # 效果: 域名保留在文件中但加#前缀, 不参与解析; 下次更新自动执行
+    ABROAD="$MODDIR/mod/abroad_domains.txt"
+    if [ -f "$ABROAD" ]; then
+        awk 'NR==FNR{a[$0]=1;next} {if($2 in a) print "#"$0; else print $0}' "$ABROAD" "$TMP_MERGED" > "$TMP_MERGED.cn" 2>>$LOG
+        mv "$TMP_MERGED.cn" "$TMP_MERGED"
+        commented=$(grep -c '^#' "$TMP_MERGED")
+        echo "[$(date)] update_rules: 国内优化 注释国外域名行=$commented" >> $LOG
+    fi
+
     echo "[$(date)] update_rules: merged $merged 行" >> $LOG
     cp "$TMP_MERGED" "$HOSTS_FILE" 2>>$LOG
     rm -f /data/local/tmp/reward_raw.txt /data/local/tmp/awa_raw.txt /data/local/tmp/awa_hosts.txt
