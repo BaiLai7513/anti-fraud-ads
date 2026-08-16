@@ -1,0 +1,49 @@
+# CN AD SDK 精准补丁 v2.0 (2026-08-16, 已剔除误伤服务域名)
+# 阿里系
+0.0.0.0 simba.taobao.com
+0.0.0.0 admarket.aliyun.com
+0.0.0.0 tanx.com
+# 穿山甲/字节 HTTPDNS
+0.0.0.0 httpdns.pangle.cn
+0.0.0.0 httpdns.bytedance.com
+0.0.0.0 httpdns.pangolin-sdk-toutiao.com
+0.0.0.0 httpdns.byteimg.com
+# 快手 HTTPDNS
+0.0.0.0 httpdns.kuaishou.com
+0.0.0.0 httpdns.gifshow.com
+# 其他广告联盟
+0.0.0.0 mintegral.com
+0.0.0.0 inmobi.com
+0.0.0.0 adview.com
+0.0.0.0 unityads.unity3d.com
+0.0.0.0 ads.tapdaq.com
+
+# === v2.0: 123云盘广告SDK实测清单 (2026-08-16 tcpdump) ===
+# 掌娱易动广告SDK
+0.0.0.0 zhangyuyidong.cn
+0.0.0.0 sdklog.zhangyuyidong.cn
+0.0.0.0 sdk.zhangyuyidong.cn
+0.0.0.0 adm.zhangyuyidong.cn
+# 环晓广告SDK
+0.0.0.0 adhuanxiao.com
+# 爱逸托/艾舒特聚合
+0.0.0.0 aiyituo.com
+0.0.0.0 cdn.aiyituo.com
+0.0.0.0 aishuttler.com
+# AnyThink/TopOn聚合
+0.0.0.0 anythinktech.com
+0.0.0.0 cn-api-sec.anythinktech.com
+0.0.0.0 tc.anythinktech.com
+# DSP/统计
+0.0.0.0 metricslinks.com
+0.0.0.0 statisticslinks.com
+# 爱奇艺广告(精确子域,勿拦static.iqiyi.com等内容CDN)
+0.0.0.0 tuiguang.iqiyi.com
+0.0.0.0 t7z.cupid.iqiyi.com
+# 子域补全 (hosts精确匹配,主域不覆盖子域)
+0.0.0.0 sdk.adhuanxiao.com
+0.0.0.0 rcv.aiyituo.com
+0.0.0.0 rcv.aishuttler.com
+0.0.0.0 datk.anythinktech.com
+0.0.0.0 dsp-api-cn.metricslinks.com
+0.0.0.0 datk.statisticslinks.com
