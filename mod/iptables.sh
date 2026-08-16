@@ -263,3 +263,12 @@ done < "$IPT_TMP"
 rm -f "$IPT_TMP"
 
 echo "[$(date)] iptables.sh: added=$added failed=$failed" >> $LOG
+
+# === Phase3: 广告HTTPDNS直连IP DROP (v1.2 CN补丁) ===
+# 腾讯DNSPod HTTPDNS (App绕过hosts直连查询广告域名)
+for ip in 119.29.29.29; do
+    iptables -D OUTPUT -d "$ip" -j DROP 2>/dev/null
+    if iptables -A OUTPUT -d "$ip" -j DROP 2>>$LOG; then
+        echo "[$(date)] AD-DROP: $ip" >> $LOG
+    fi
+done
