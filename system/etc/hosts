@@ -1,6 +1,51 @@
-# anti_fraud_ads 占位 hosts（云端订阅前的基础兜底）
-# 云端规则由 mod/update_rules.sh 开机自动拉取合并（lingeringsound/10007/all 完整版 + AWAvenue 秋风 + CN精准补丁，IPv6双写防绕过）
+# anti_fraud_ads 静态 hosts (v260828)
+# 本版已去除 hosts 云端订阅，仅保留少部分基础 host（国内广告 SDK 精准拦截）。
+# 需要完整 hosts 订阅的用户请下载旧版本，或改用 AdGuard for root 等同类模块。
 127.0.0.1 localhost
 ::1 localhost
 ::1 ip6-loopback
 ::1 ip6-localhost
+
+# ===== 国内广告 SDK 精准拦截（少部分 host）=====
+# 阿里系
+0.0.0.0 simba.taobao.com
+0.0.0.0 admarket.aliyun.com
+0.0.0.0 tanx.com
+# 穿山甲/字节 HTTPDNS
+0.0.0.0 httpdns.pangle.cn
+0.0.0.0 httpdns.bytedance.com
+0.0.0.0 httpdns.pangolin-sdk-toutiao.com
+0.0.0.0 httpdns.byteimg.com
+# 快手 HTTPDNS
+0.0.0.0 httpdns.kuaishou.com
+0.0.0.0 httpdns.gifshow.com
+# 其他广告联盟
+0.0.0.0 mintegral.com
+0.0.0.0 inmobi.com
+0.0.0.0 adview.com
+0.0.0.0 unityads.unity3d.com
+0.0.0.0 ads.tapdaq.com
+# 123云盘广告SDK实测清单
+0.0.0.0 zhangyuyidong.cn
+0.0.0.0 sdklog.zhangyuyidong.cn
+0.0.0.0 sdk.zhangyuyidong.cn
+0.0.0.0 adm.zhangyuyidong.cn
+0.0.0.0 adhuanxiao.com
+0.0.0.0 aiyituo.com
+0.0.0.0 cdn.aiyituo.com
+0.0.0.0 aishuttler.com
+0.0.0.0 anythinktech.com
+0.0.0.0 cn-api-sec.anythinktech.com
+0.0.0.0 tc.anythinktech.com
+0.0.0.0 metricslinks.com
+0.0.0.0 statisticslinks.com
+# 爱奇艺广告(精确子域)
+0.0.0.0 tuiguang.iqiyi.com
+0.0.0.0 t7z.cupid.iqiyi.com
+# 子域补全
+0.0.0.0 sdk.adhuanxiao.com
+0.0.0.0 rcv.aiyituo.com
+0.0.0.0 rcv.aishuttler.com
+0.0.0.0 datk.anythinktech.com
+0.0.0.0 dsp-api-cn.metricslinks.com
+0.0.0.0 datk.statisticslinks.com
