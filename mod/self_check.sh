@@ -82,6 +82,57 @@ else
   echo "[WARN] module.log 不存在"
 fi
 
+# 7. 共享存储状态（只读检查；模块不应修改 /data/media）
+echo "[存储] sm list-volumes all:"
+sm list-volumes all 2>&1 | sed 's/^/  /'
+echo "[存储] ls -ld /storage/emulated/0 /data/media/0:"
+ls -ld /storage/emulated/0 /data/media/0 2>&1 | sed 's/^/  /'
+if [ -d /storage/emulated/0 ] 2>/dev/null && [ -r /storage/emulated/0 ] 2>/dev/null; then
+  echo "[PASS] 共享存储可访问 (/storage/emulated/0)"
+else
+  echo "[FAIL] 共享存储不可访问（检查 vold/FUSE；模块不应修改 /data/media）"
+fi
+
+# 8. ads_lock 修改记录与备份
+STATE="$MODDIR/backup/state.tsv"
+if [ -f "$STATE" ]; then
+  N=$(wc -l < "$STATE" 2>/dev/null | tr -d ' ')
+  echo "[ads_lock] 修改记录: ${N} 条 ($STATE)"
+  if [ "$N" -gt 0 ] 2>/dev/null; then
+    BAD=$(cut -f2 "$STATE" 2>/dev/null | grep -E '^/data/media/|^/storage/|^/sdcard/' | head -3)
+    if [ -n "$BAD" ]; then
+      echo "[FAIL] state 含共享存储路径（旧版本残留）:"
+      echo "$BAD" | sed 's/^/   /'
+    else
+      echo "[PASS] state 无共享存储路径"
+    fi
+    echo "[ads_lock] 回滚命令: sh $MODDIR/mod/rollback.sh"
+  fi
+else
+  echo "[WARN] state.tsv 不存在（未执行过 ads_lock 或旧版本）"
+fi
+PAYLOAD_N=$(ls -A "$MODDIR/backup/payload" 2>/dev/null | wc -l | tr -d ' ')
+SQLITE_N=$(ls -A "$MODDIR/backup/sqlite" 2>/dev/null | wc -l | tr -d ' ')
+echo "[ads_lock] 备份文件: payload=${PAYLOAD_N} sqlite=${SQLITE_N}"
+
+# 9. 配置与 immutable 能力
+CONFIG="$MODDIR/config.conf"
+if [ -f "$CONFIG" ]; then
+  echo "[config] $CONFIG"
+  grep -E '^AFADS_' "$CONFIG" 2>/dev/null | sed 's/^/  /'
+else
+  echo "[WARN] config.conf 不存在，使用默认值"
+fi
+if command -v chattr >/dev/null 2>&1 && command -v lsattr >/dev/null 2>&1; then
+  echo "[PASS] chattr/lsattr 可用"
+else
+  echo "[WARN] chattr/lsattr 不可用，锁定降级为 chmod"
+fi
+
+# 10. 旧版本遗留提示（只读）
+echo "[提示] 若旧版本曾修改共享存储，可用以下命令检查 immutable 残留:"
+echo "       lsattr -d /data/media/0/Android/data/* 2>/dev/null | grep ' i'"
+
 echo "[module.log 尾部]"
 tail -5 "$MLOG" 2>/dev/null | sed 's/^/  /'
 echo "[$NOW] 自检完成"
