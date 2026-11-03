@@ -2,14 +2,21 @@
 # 精简版 iptables — ColorOS + 国家反诈 (v2 fixed: while-read)
 MODDIR="${0%/*}/.."
 LOG="$MODDIR/module.log"
+CLEANUP=0
+[ "${1:-}" = "--cleanup" ] && CLEANUP=1
+removed=0
 
 # === Phase 1: REDIRECT phonemanager + appdetail → 127.0.0.1:8848 ===
 for package in com.coloros.phonemanager com.oplus.appdetail; do
     uid=$(grep "^$package" /data/system/packages.list | awk '{print $2}')
     if [ -n "$uid" ]; then
         iptables -t nat -D OUTPUT -m owner --uid-owner="$uid" -p tcp -j REDIRECT --to-ports 8848 2>/dev/null
-        iptables -t nat -A OUTPUT -m owner --uid-owner="$uid" -p tcp -j REDIRECT --to-ports 8848 2>>$LOG
-        echo "[$(date)] REDIRECT: $package (uid=$uid) -> :8848" >> $LOG
+        if [ "$CLEANUP" = "1" ]; then
+            echo "[$(date)] CLEANUP REDIRECT: $package (uid=$uid)" >> $LOG
+        else
+            iptables -t nat -A OUTPUT -m owner --uid-owner="$uid" -p tcp -j REDIRECT --to-ports 8848 2>>$LOG
+            echo "[$(date)] REDIRECT: $package (uid=$uid) -> :8848" >> $LOG
+        fi
     else
         echo "[$(date)] SKIP: $package uid not found" >> $LOG
     fi
@@ -251,24 +258,34 @@ while read -r i; do
     esac
 
     if echo "$i" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'; then
-        iptables -D OUTPUT -d "$i" -j DROP 2>/dev/null
-        if iptables -A OUTPUT -d "$i" -j DROP 2>>$LOG; then
-            added=$((added + 1))
+        if [ "$CLEANUP" = "1" ]; then
+            iptables -D OUTPUT -d "$i" -j DROP 2>/dev/null && removed=$((removed + 1))
         else
-            failed=$((failed + 1))
+            iptables -D OUTPUT -d "$i" -j DROP 2>/dev/null
+            if iptables -A OUTPUT -d "$i" -j DROP 2>>$LOG; then
+                added=$((added + 1))
+            else
+                failed=$((failed + 1))
+            fi
         fi
     fi
 done < "$IPT_TMP"
 
 rm -f "$IPT_TMP"
 
+if [ "$CLEANUP" = "1" ]; then
+    echo "[$(date)] iptables.sh: cleanup removed=$removed failed=$failed" >> $LOG
+else
 echo "[$(date)] iptables.sh: added=$added failed=$failed" >> $LOG
+fi
 
 # === Phase3: 广告HTTPDNS直连IP DROP (v1.2 CN补丁) ===
 # 腾讯DNSPod HTTPDNS (App绕过hosts直连查询广告域名)
 for ip in 119.29.29.29; do
     iptables -D OUTPUT -d "$ip" -j DROP 2>/dev/null
-    if iptables -A OUTPUT -d "$ip" -j DROP 2>>$LOG; then
+    if [ "$CLEANUP" = "1" ]; then
+        echo "[$(date)] CLEANUP AD-DROP: $ip" >> $LOG
+    elif iptables -A OUTPUT -d "$ip" -j DROP 2>>$LOG; then
         echo "[$(date)] AD-DROP: $ip" >> $LOG
     fi
 done

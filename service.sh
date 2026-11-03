@@ -5,6 +5,11 @@ LOG="$MODDIR/module.log"
 
 # 初始化日志
 echo "=== $(date) service.sh started ===" >> $LOG
+# ===== 读取用户配置（不存在则使用默认值） =====
+AFADS_ADS_LOCK_ENABLED=1
+AFADS_DRY_RUN=0
+CONFIG="$MODDIR/config.conf"
+[ -f "$CONFIG" ] && . "$CONFIG"
 
 # ===== 阶段1: 等待系统就绪 =====
 echo "[$(date)] Phase1: waiting for boot_completed" >> $LOG
@@ -121,28 +126,33 @@ done
 # ===== 阶段4-6: 后台任务（有超时监控） =====
 echo "[$(date)] Phase4: launching background tasks" >> $LOG
 
-# ads_lock
-sh "$MODDIR/mod/ads_lock.sh" >> $LOG 2>&1 &
-ads_pid=$!
-echo "[$(date)] Phase4: ads_lock.sh pid=$ads_pid" >> $LOG
-
-# 等待后台任务（最多 5 分钟，逐个等待）
-for task_pid in $ads_pid; do
+# ads_lock（受 config.conf 控制；修改记录见 backup/state.tsv）
+if [ "$AFADS_ADS_LOCK_ENABLED" = "0" ]; then
+    echo "[$(date)] Phase4: ads_lock disabled by config.conf" >> $LOG
+elif command -v timeout >/dev/null 2>&1; then
+    timeout 300 sh "$MODDIR/mod/ads_lock.sh" >> $LOG 2>&1
+    echo "[$(date)] Phase4: ads_lock finished (rc=$?)" >> $LOG
+else
+    sh "$MODDIR/mod/ads_lock.sh" >> $LOG 2>&1 &
+    ads_pid=$!
+    echo "[$(date)] Phase4: ads_lock.sh pid=$ads_pid" >> $LOG
     waited=0
     while [ $waited -lt 300 ]; do
-        if ! kill -0 "$task_pid" 2>/dev/null; then
-            wait "$task_pid" 2>/dev/null
-            echo "[$(date)] task pid=$task_pid finished (rc=$?)" >> $LOG
+        if ! kill -0 "$ads_pid" 2>/dev/null; then
+            wait "$ads_pid" 2>/dev/null
+            echo "[$(date)] Phase4: ads_lock finished (rc=$?)" >> $LOG
             break
         fi
         sleep 5
         waited=$((waited + 5))
     done
-    if kill -0 "$task_pid" 2>/dev/null; then
-        echo "[$(date)] task pid=$task_pid TIMEOUT after 300s" >> $LOG
+    if kill -0 "$ads_pid" 2>/dev/null; then
+        echo "[$(date)] Phase4: ads_lock TIMEOUT after 300s, killing pid=$ads_pid" >> $LOG
+        kill "$ads_pid" 2>/dev/null
+        sleep 2
+        kill -9 "$ads_pid" 2>/dev/null
     fi
-done
-
+fi
 final_count=$(iptables -L OUTPUT -n 2>/dev/null | grep -c DROP)
 if [ "$final_count" -ge 100 ]; then
     echo "[$(date)] service.sh: ALL OK, final DROP=$final_count" >> $LOG
